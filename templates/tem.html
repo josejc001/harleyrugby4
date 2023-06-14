@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Assistente Harley</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
+
+  <style>
+    /* Estilos para o container do chat */
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Estilos para o título do assistente */
+    h1 {
+      color: white;
+      font-size: 16px;
+    }
+
+    /* Estilos para o chat-box */
+    .chat-box {
+      margin-top: 20px;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    /* Estilos para as mensagens do chat */
+    .chat-box .mt-3 {
+      margin-top: 10px;
+    }
+
+    .chat-box .p-3 {
+      padding: 10px;
+    }
+
+    .rounded {
+      border-radius: 5px;
+    }
+
+    /* Estilos para as mensagens do usuário */
+    .user-message {
+      background-color: #d3e5fc;
+      text-align: right;
+    }
+
+    .user-icon {
+      display: block;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-left: auto;
+    }
+
+    /* Estilos para as mensagens do bot */
+    .bot-message {
+      background-color: #fff;
+    }
+
+    .bot-icon {
+      display: block;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: auto;
+    }
+
+    /* Estilos para o input e o botão */
+    .input-group {
+      margin-top: 20px;
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+    }
+
+    .custom-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    #send-btn {
+      padding: 10px 20px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h1>Assistente Harley</h1><img src="{{ url_for('static', filename='images/gpt.jpg') }}" class="bot-icon" style="width: 30px; height: 30px; margin-right: 10px;">
+      Assistente Harley
+    </h1>
+    <body style="background-color:white ">
+    <div class="chat-box mt-3">
+      <!-- Chat messages will be added here dynamically -->
+    </div>
+    <div class="form-group mt-3">
+      <div class="input-group custom-input-group">
+        <input type="text" class="form-control custom-input" placeholder="Escrever..." id="message-input">
+        <button type="button" class="btn btn-primary" id="send-btn">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript code here
+
+    setInterval(highlightAll, 1000);
+
+    function highlightAll() {
+      document.querySelectorAll("pre code").forEach(block => {
+        hljs.highlightBlock(block);
+      });
+    }
+
+    const chatBox = document.querySelector(".chat-box");
+    const messageInput = document.querySelector("#message-input");
+    const sendBtn = document.querySelector("#send-btn");
+
+    function addMessage(message, isUserMessage) {
+      const messageDiv = document.createElement("div");
+      messageDiv.classList.add("mt-3", "p-3", "rounded");
+
+      if (isUserMessage) {
+        messageDiv.classList.add("user-message");
+      } else {
+        messageDiv.classList.add("bot-message");
+      }
+
+      const messageContent = document.createElement("p");
+      messageDiv.appendChild(messageContent);
+
+      const iconImage = document.createElement("img");
+      iconImage.src = isUserMessage ? "{{ url_for('static', filename='images/user.png') }}" : "{{ url_for('static', filename='images/gpt.jpg') }}";
+      iconImage.classList.add("user-icon");
+      if (!isUserMessage) {
+        iconImage.classList.add("bot-icon");
+      }
+      messageDiv.insertBefore(iconImage, messageContent);
+
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (!isUserMessage) {
+        animateTypingEffect(message, messageContent);
+      } else {
+        messageContent.textContent = message;
+      }
+    }
+
+    function animateTypingEffect(message, messageContent) {
+      const speed = 50;
+      let i = 0;
+      const typingInterval = setInterval(() => {
+        messageContent.textContent += message.charAt(i);
+        i++;
+
+        if (i === message.length) {
+          clearInterval(typingInterval);
+        }
+      }, speed);
+    }
+
+    function sendMessage() {
+      const message = messageInput.value.trim();
+
+      if (message !== "") {
+        addMessage(message, true);
+
+        fetch("/api", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message })
+          })
+          .then(response => response.json())
+          .then(data => {
+            messageInput.value = "";
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("mt-3", "p-3", "rounded");
+            messageDiv.classList.add("bot-message");
+
+            const content = data.content;
+
+            const hasCodeBlock = content.includes("```");
+            if (hasCodeBlock) {
+              const codeContent = content.replace(/```([\s\S]+?)```/g, '</p><pre><code>$1</code></pre><p>');
+              messageDiv.innerHTML = `<img src="{{ url_for('static', filename='images/gpt.jpg') }}" class="bot-icon"><p>${codeContent}</p>`;
+            } else {
+              messageDiv.innerHTML = `<img src="{{ url_for('static', filename='images/gpt.jpg') }}" class="bot-icon"><p>${content}</p>`;
+            }
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            if (!hasCodeBlock) {
+              animateTypingEffect(content, messageDiv.querySelector("p"));
+            }
+          })
+          .catch(error => console.error(error));
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", event => {
+      if (event.keyCode === 13 && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+
+</html>
