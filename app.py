@@ -10,12 +10,12 @@ company_name = "mtevlution"
 knowledge_area = "desportos com foco principal Rugby"
 
 # Set up OpenAI API credentials
-openai.api_key = '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'
+openai.api_key = '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'
 
 # Define the default route to return the index.html file
 @app.route("/")
 def index():
-    return render_template("h.html")
+    return render_template("tem.html")
 
 # Define the /api route to handle POST requests
 @app.route("/api", methods=["POST"])
